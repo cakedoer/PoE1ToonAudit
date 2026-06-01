@@ -1,6 +1,6 @@
 @PoE1ToonAudit_HostAddress = http://localhost:5293
 
-GET {{PoE1ToonAudit_HostAddress}}/api/audit/test
+GET {{PoE1ToonAudit_HostAddress}}/api/audit/check-gear
 Accept: application/json
 
 ###
