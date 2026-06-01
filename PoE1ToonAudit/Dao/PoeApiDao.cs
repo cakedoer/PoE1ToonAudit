@@ -1,4 +1,6 @@
 ﻿using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PoE1ToonAudit.Models;
 
 namespace PoE1ToonAudit.Dao;
@@ -11,7 +13,9 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
 
         var accountName = config["PathOfExile:AccountName"] ?? throw new Exception("Missing account name");
         var toonName    = config["PathOfExile:ToonName"]    ?? throw new Exception("Missing character name");
-        var sessId = config["PathOfExile:SessionId"]   ?? throw new InvalidOperationException("POESESSID is missing from configuration");
+        
+        // POESESSID is now optional. If missing, we attempt a public unauthenticated request.
+        var sessId = config["PathOfExile:SessionId"];
 
         // i hate var i regret everything
         // todo string validation for the above in separate method
@@ -26,7 +30,17 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
         var request = new HttpRequestMessage(HttpMethod.Post,
             "https://www.pathofexile.com/character-window/get-items");
         
-        request.Headers.Add("Cookie", $"POESESSID={sessId}");
+        // Add session cookie dynamically if found in local secrets
+        if (!string.IsNullOrEmpty(sessId))
+        {
+            request.Headers.Add("Cookie", $"POESESSID={sessId}");
+            logger.LogInformation("POESESSID found. Sending authenticated request for account: {Account}", accountName);
+        }
+        else
+        {
+            logger.LogInformation("No POESESSID found. Attempting public unauthenticated request for account: {Account}", accountName);
+        }
+
         request.Content = new FormUrlEncodedContent
         ([
             new KeyValuePair<string, string>("accountName", accountName),
@@ -34,6 +48,12 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
         ]);
 
         var response = await client.SendAsync(request);
+
+        // Handle specific privacy errors cleanly
+        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            throw new HttpRequestException($"Cannot access profile. The account '{accountName}' is private or requires a valid POESESSID.");
+        }
 
         if (!response.IsSuccessStatusCode)
             throw new HttpRequestException($"PoE API returned {(int)response.StatusCode}");
