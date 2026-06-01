@@ -14,4 +14,4 @@ Navigate to the project folder, then do
 
 After that, save your session ID to your machine's secure local storage
 
-`dotnet user-secrets set "PoE:SessionId" "your_copied_poesessid_here"`
+`dotnet user-secrets set "PathOfExile:SessionId" "your_copied_poesessid_here"`

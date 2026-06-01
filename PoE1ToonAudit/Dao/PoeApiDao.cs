@@ -1,6 +1,4 @@
 ﻿using System.Text.Json;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using PoE1ToonAudit.Models;
 
 namespace PoE1ToonAudit.Dao;
