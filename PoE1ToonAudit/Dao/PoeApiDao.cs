@@ -14,7 +14,7 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
         var accountName = config["PathOfExile:AccountName"] ?? throw new Exception("Missing account name");
         var toonName    = config["PathOfExile:ToonName"]    ?? throw new Exception("Missing character name");
         
-        // POESESSID is now optional. If missing, we attempt a public unauthenticated request.
+        // Optional
         var sessId = config["PathOfExile:SessionId"];
 
         // i hate var i regret everything
@@ -38,7 +38,7 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
         }
         else
         {
-            logger.LogInformation("No POESESSID found. Attempting public unauthenticated request for account: {Account}", accountName);
+            logger.LogInformation("No POESESSID found. Attempting unauthenticated request for account: {Account}", accountName);
         }
 
         request.Content = new FormUrlEncodedContent
@@ -49,7 +49,7 @@ public class PoeApiDao(IConfiguration config, ILogger<PoeApiDao> logger)
 
         var response = await client.SendAsync(request);
 
-        // Handle specific privacy errors cleanly
+        // Throw exception in case of private profile or request denial by the PoE API
         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
             throw new HttpRequestException($"Cannot access profile. The account '{accountName}' is private or requires a valid POESESSID.");
